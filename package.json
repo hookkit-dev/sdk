@@ -1,0 +1,46 @@
+{
+  "name": "@hookkit/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript client for the HookKit API: Uniswap v4 hooks and pools on Robinhood Chain.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "license": "MIT",
+  "author": "HookKit Labs",
+  "homepage": "https://hookkit.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hookkit-dev/sdk.git"
+  },
+  "bugs": "https://github.com/hookkit-dev/sdk/issues",
+  "keywords": [
+    "hookkit",
+    "uniswap",
+    "uniswap-v4",
+    "hooks",
+    "robinhood-chain",
+    "defi",
+    "liquidity",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
