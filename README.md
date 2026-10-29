@@ -26,6 +26,9 @@ import { HookKit, HookKitError } from "@hookkit/sdk"
 
 const hookkit = new HookKit() // https://api.hookkit.dev, no API key
 
+const ETH = "0x0000000000000000000000000000000000000000"
+const USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+
 // Hooks
 const hook = await hookkit.hooks.get("0x4e3468951D49f2EEa976eD0D6e75fFCb44a9a544")
 hook.capabilities // [{ level: "warning", flag: "afterSwapReturnDelta", note: "..." }, ...]
@@ -41,6 +44,7 @@ const mined = await hookkit.hooks.mine({ flags: ["beforeSwap", "afterSwap"], ini
 const poolId = "0x387bf619da4d3fb62bb276482693dba1b9b3520f573cabdfe033384a24125982" // ETH/USDG 0.05%
 const pool = await hookkit.pools.get({ poolId })
 const { pools } = await hookkit.pools.list({ hooked: true, limit: 10 })
+const { total } = await hookkit.pools.list({ tokenA: ETH, tokenB: USDG }) // every pool for one pair
 const id = await hookkit.pools.id({
   currency0: "0x0000000000000000000000000000000000000000",
   currency1: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
@@ -48,7 +52,16 @@ const id = await hookkit.pools.id({
   tickSpacing: 10,
 })
 
-// Quote (runs the hook) and build an unsigned swap
+// Best pool for a pair: quotes the deepest pools through their hooks, ranked
+const best = await hookkit.bestQuote({ tokenIn: ETH, tokenOut: USDG, amount: "0.1" })
+best.best    // { poolId, amountOut, vsSpotPct, hook: { warnings }, ... }
+best.routes  // every quoted pool, best first
+
+// Safety brief before trading or providing liquidity
+const check = await hookkit.pools.check({ poolId: best.best.poolId, tokenIn: ETH, amount: "0.1" })
+check.risk   // { level: "medium", reasons: ["Hook can set its own swap price (beforeSwapReturnDelta)", ...] }
+
+// Quote one pool (runs the hook) and build an unsigned swap
 const quote = await hookkit.quote({ poolId, tokenIn: "0x0000000000000000000000000000000000000000", amount: "0.01" })
 const swap = await hookkit.swap.build({
   poolId,

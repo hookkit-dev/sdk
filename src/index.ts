@@ -152,6 +152,49 @@ export type SwapBuild = {
   note: string;
 };
 
+export type Route = {
+  poolId: Hex;
+  key: PoolKey;
+  fee: string;
+  currentLpFee: string;
+  hook: { address: Address; enabled: HookFlag[]; warnings: string[] } | null;
+  amountOut: string;
+  amountOutRaw: string;
+  spotAmountOut: number;
+  vsSpotPct: number | null;
+  gasEstimate: string;
+};
+
+export type BestQuote = {
+  tokenIn: Token;
+  tokenOut: Token;
+  amountIn: string;
+  best: Route;
+  routes: Route[];
+  considered: { pairPools: number; initialized: number; quoted: number; failed: number };
+  note: string;
+};
+
+export type PoolCheck = {
+  poolId: Hex;
+  pair: string;
+  key: PoolKey;
+  fee: string;
+  currentLpFee: string;
+  liquidity: string;
+  hook: { address: Address; enabled: HookFlag[]; code: HookProfile["code"] | null } | null;
+  quoteCheck: {
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: string;
+    amountOut: string;
+    spotAmountOut: number;
+    vsSpotPct: number | null;
+  } | null;
+  risk: { level: "low" | "medium" | "high"; reasons: string[] };
+  note: string;
+};
+
 export type MineResult =
   | {
       found: true;
@@ -257,8 +300,13 @@ export class HookKit {
     /** Live pool state by id or key. */
     get: (ref: PoolRef) =>
       "poolId" in ref ? this.request<Pool>("GET", `/v1/pools/${ref.poolId}`) : this.request<Pool>("POST", "/v1/pools/state", ref),
-    list: (params: { hook?: Address; token?: Address; hooked?: boolean; limit?: number; offset?: number } = {}) =>
+    list: (
+      params: { hook?: Address; token?: Address; tokenA?: Address; tokenB?: Address; hooked?: boolean; limit?: number; offset?: number } = {}
+    ) =>
       this.request<{ total: number; limit: number; offset: number; pools: PoolSummary[] }>("GET", "/v1/pools", params),
+    /** Safety brief: risk level and reasons from hook permissions, bytecode, and (with amount) a live quote vs spot. */
+    check: (ref: PoolRef & { tokenIn?: Address; amount?: string; hookData?: Hex }) =>
+      this.request<PoolCheck>("POST", "/v1/pools/check", ref),
     /** PoolId for a key (currencies are sorted for you). */
     id: (key: { currency0: Address; currency1: Address; fee: number; tickSpacing: number; hooks?: Address }) =>
       this.request<{ poolId: Hex; key: PoolKey; sorted: boolean }>("POST", "/v1/pools/id", key),
@@ -267,6 +315,11 @@ export class HookKit {
   /** Quote through the pool's hook via the V4Quoter. */
   quote(params: QuoteParams) {
     return this.request<Quote>("POST", "/v1/quote", params);
+  }
+
+  /** Best pool for a pair: quotes the deepest pools through their hooks and ranks them. */
+  bestQuote(params: { tokenIn: Address; tokenOut: Address; amount: string; limit?: number }) {
+    return this.request<BestQuote>("GET", "/v1/quote/best", params);
   }
 
   readonly swap = {
